@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import "./App.css";
 
-const API = "http://localhost:5000/api";
+const API = "https://smart-freelancer-project.onrender.com/api";
 const TASK_STATUSES = ["To Do", "In Progress", "Completed"];
 
 const money = (value) =>
