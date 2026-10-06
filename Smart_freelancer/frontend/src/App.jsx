@@ -26,10 +26,20 @@ async function request(path, options = {}) {
     },
   });
 
-  const data = await response.json().catch(() => ({}));
+  const responseText = await response.text();
+  let data = {};
+
+  try {
+    data = responseText ? JSON.parse(responseText) : {};
+  } catch {
+    data = {};
+  }
 
   if (!response.ok) {
-    throw new Error(data.error || "The request could not be completed.");
+    const details = data.error || responseText || response.statusText;
+    throw new Error(
+      `Request failed (${response.status})${details ? `: ${details}` : "."}`,
+    );
   }
 
   return data;
@@ -225,6 +235,21 @@ function App() {
     }
   }
 
+  async function deleteClient(clientId, companyName) {
+    setError("");
+    setNotice("");
+
+    try {
+      await request(`/clients/${clientId}`, { method: "DELETE" });
+      setNotice(`Client "${companyName}" and its related records were deleted.`);
+      await load();
+      return true;
+    } catch (err) {
+      setError(err.message);
+      return false;
+    }
+  }
+
   const invoicesDueSoon = invoices
     .filter((invoice) => {
       if (invoice.status === "Paid" || !invoice.due_date) return false;
@@ -307,6 +332,7 @@ function App() {
           <ClientsPage
             clients={clients}
             demoUser={demoUser}
+            onDelete={deleteClient}
             onSubmit={(event, body) =>
               submit(event, "/clients", body, "Client added successfully.")
             }
@@ -547,7 +573,7 @@ function Dashboard({
   );
 }
 
-function ClientsPage({ clients, demoUser, onSubmit }) {
+function ClientsPage({ clients, demoUser, onSubmit, onDelete }) {
   function handleSubmit(event) {
     const form = event.currentTarget;
     const body = {
@@ -598,22 +624,88 @@ function ClientsPage({ clients, demoUser, onSubmit }) {
         />
         {clients.length ? (
           clients.map((client) => (
-            <div className="client-row" key={client.id}>
-              <div className="avatar">
-                {(client.company_name || "C").slice(0, 1).toUpperCase()}
-              </div>
-              <div>
-                <b>{client.company_name}</b>
-                <span>{client.phone || "No phone"}</span>
-                <span>{client.address || "No address"}</span>
-              </div>
-            </div>
+            <ClientRow key={client.id} client={client} onDelete={onDelete} />
           ))
         ) : (
           <Empty>No clients yet. Add your first client.</Empty>
         )}
       </section>
     </div>
+  );
+}
+
+function ClientRow({ client, onDelete }) {
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  async function confirmDelete() {
+    setDeleting(true);
+    const deleted = await onDelete(client.id, client.company_name || "Client");
+    setDeleting(false);
+    if (deleted) setDeleteDialogOpen(false);
+  }
+
+  return (
+    <>
+      <div className="client-row">
+        <div className="avatar">
+          {(client.company_name || "C").slice(0, 1).toUpperCase()}
+        </div>
+        <div className="client-info">
+          <b>{client.company_name}</b>
+          <span>{client.phone || "No phone"}</span>
+          <span>{client.address || "No address"}</span>
+        </div>
+        <button
+          className="delete-button"
+          onClick={() => setDeleteDialogOpen(true)}
+          aria-label={`Delete ${client.company_name || "client"}`}
+        >
+          Delete
+        </button>
+      </div>
+
+      {deleteDialogOpen && (
+        <div
+          className="delete-dialog-backdrop"
+          onClick={() => !deleting && setDeleteDialogOpen(false)}
+        >
+          <section
+            className="delete-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={`delete-client-title-${client.id}`}
+            onClick={(event) => event.stopPropagation()}
+          >
+            <span className="delete-dialog-icon">!</span>
+            <h2 id={`delete-client-title-${client.id}`}>
+              Delete “{client.company_name}”?
+            </h2>
+            <p>
+              This permanently deletes the client and all related projects,
+              tasks, invoices, payments, and activity history. This cannot be
+              undone.
+            </p>
+            <div className="delete-dialog-actions">
+              <button
+                className="quiet-button"
+                disabled={deleting}
+                onClick={() => setDeleteDialogOpen(false)}
+              >
+                Keep client
+              </button>
+              <button
+                className="danger-confirm-button"
+                disabled={deleting}
+                onClick={confirmDelete}
+              >
+                {deleting ? "Deleting…" : "Delete permanently"}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+    </>
   );
 }
 

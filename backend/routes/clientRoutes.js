@@ -77,4 +77,25 @@ router.get("/", (req, res) => {
   }
 });
 
+router.delete("/:id", (req, res) => {
+  try {
+    const deleteClient = db.transaction(() => {
+      const result = db
+        .prepare("DELETE FROM clients WHERE id = ?")
+        .run(req.params.id);
+
+      return result.changes;
+    });
+
+    if (deleteClient() === 0) {
+      return res.status(404).json({ error: "Client not found" });
+    }
+
+    res.json({ message: "Client and related records deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete client" });
+  }
+});
+
 module.exports = router;

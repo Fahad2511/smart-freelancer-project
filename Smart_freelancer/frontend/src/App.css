@@ -381,10 +381,12 @@
   font-weight: 800;
 }
 
-.client-row>div:last-child {
+.client-info {
   display: grid;
   gap: 3px;
   font-size: 12px;
+  flex: 1;
+  min-width: 0;
 }
 
 .client-row span {
