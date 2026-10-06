@@ -6,6 +6,7 @@ const taskRoutes = require("./routes/taskRoutes");
 const invoiceRoutes = require("./routes/invoiceRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
+require("./database/schema");
 
 const app = express();
 

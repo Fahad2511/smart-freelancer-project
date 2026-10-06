@@ -131,31 +131,6 @@ db.exec(`
 console.log("Project history table created successfully!");
 
 
-db.exec(`
-  DROP TABLE IF EXISTS projects;
-
-  CREATE TABLE projects (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    client_id INTEGER NOT NULL,
-    title TEXT NOT NULL,
-    description TEXT,
-    budget REAL NOT NULL,
-    deadline DATE NOT NULL,
-    status TEXT NOT NULL DEFAULT 'active'
-      CHECK(status IN ('active', 'completed', 'cancelled')),
-    attachment_url TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-
-    FOREIGN KEY (client_id)
-      REFERENCES clients(id)
-      ON DELETE CASCADE,
-
-    UNIQUE(client_id, title)
-  );
-`);
-
-console.log("Projects table recreated successfully!");
-
 db.prepare(`INSERT OR IGNORE INTO users
 (id, name, email, password, role)
 VALUES(?, ?, ?, ?, ?)
